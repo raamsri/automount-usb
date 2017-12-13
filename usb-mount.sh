@@ -101,17 +101,17 @@ do_unmount()
         #Remove samba share if exist
         #
         #Get name share
-		SMB_SHARE_NAME=$(echo ${MOUNT_POINT} | sed "s/\/media\///g")
-		if [ -f /etc/samba/${SMB_SHARE_NAME}.conf ]; then
-			#Remove definition file
-			/bin/rm /etc/samba/${SMB_SHARE_NAME}.conf
-			#Remove include from smb.conf
-			sed -i "s/include = \/etc\/samba\/${SMB_SHARE_NAME}.conf//g" /etc/samba/smb.conf
-			#Delete all trailing blank lines at end of file 
-			sed -i -e :a -e '/^\n*$/{$d;N;};/\n$/ba' /etc/samba/smb.conf
-			#restart smb service
-			/bin/systemctl restart smbd
-		fi
+	SMB_SHARE_NAME=$(echo ${MOUNT_POINT} | sed "s/\/media\///g")
+	if [ -f /etc/samba/${SMB_SHARE_NAME}.conf ]; then
+		#Remove definition file
+		/bin/rm /etc/samba/${SMB_SHARE_NAME}.conf
+		#Remove include from smb.conf
+		sed -i "s/include = \/etc\/samba\/${SMB_SHARE_NAME}.conf//g" /etc/samba/smb.conf
+		#Delete all trailing blank lines at end of file 
+		sed -i -e :a -e '/^\n*$/{$d;N;};/\n$/ba' /etc/samba/smb.conf
+		#restart smb service
+		/bin/systemctl restart smbd
+	fi
     fi
 
 
