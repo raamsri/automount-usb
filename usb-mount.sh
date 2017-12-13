@@ -51,6 +51,7 @@ do_mount()
 
     # Prefix the device name in case the drive doesn't have label
     MOUNT_POINT="/media/${DEVBASE}_${LABEL}"
+    SMB_SHARE_NAME="${DEVBASE}_${LABEL}"
 
     ${log} "Mount point: ${MOUNT_POINT}"
 
@@ -61,7 +62,7 @@ do_mount()
 
     # File system type specific mount options
     if [[ ${ID_FS_TYPE} == "vfat" ]]; then
-        OPTS+=",users,gid=100,umask=000,shortname=mixed,utf8=1,flush"
+        OPTS+=",users,user,gid=65534,uid=65534,umask=000,shortname=mixed,utf8=1,flush"
     fi
 
     if ! mount -o ${OPTS} ${DEVICE} ${MOUNT_POINT}; then
@@ -70,7 +71,18 @@ do_mount()
         exit 1
     else
         # Track the mounted drives
-        echo "${MOUNT_POINT}:${DEVBASE}" | cat >> "/var/log/usb-mount.track" 
+        echo "${MOUNT_POINT}:${DEVBASE}" | cat >> "/var/log/usb-mount.track"
+        ## 
+        #Sharing mounted drive as public read write share if samba installed
+		## 
+		if [[ $(/usr/bin/which samba | grep -ic 'samba') != 0 ]]; then
+			# Create samba file definition
+			printf "[%s]\n  comment = Public share of %s\n  path = %s\n  browsable =yes\n  create mask = 0660\n  directory mask = 0771\n  writable = yes\n  guest ok = yes\n" "$SMB_SHARE_NAME" "$SMB_SHARE_NAME" "$MOUNT_POINT" > /etc/samba/${SMB_SHARE_NAME}.conf
+			#Include samba file definition in smb.conf
+			echo "include = /etc/samba/${SMB_SHARE_NAME}.conf" >> /etc/samba/smb.conf
+			#restart smb service
+			/bin/systemctl restart smbd
+		fi
     fi
 
     ${log} "Mounted ${DEVICE} at ${MOUNT_POINT}"
@@ -85,6 +97,21 @@ do_unmount()
 	${log} "Unmounted ${DEVICE} from ${MOUNT_POINT}"
         /bin/rmdir "${MOUNT_POINT}"
         sed -i.bak "\@${MOUNT_POINT}@d" /var/log/usb-mount.track
+        #
+        #Remove samba share if exist
+        #
+        #Get name share
+		SMB_SHARE_NAME=$(echo ${MOUNT_POINT} | sed "s/\/media\///g")
+		if [ -f /etc/samba/${SMB_SHARE_NAME}.conf ]; then
+			#Remove definition file
+			/bin/rm /etc/samba/${SMB_SHARE_NAME}.conf
+			#Remove include from smb.conf
+			sed -i "s/include = \/etc\/samba\/${SMB_SHARE_NAME}.conf//g" /etc/samba/smb.conf
+			#Delete all trailing blank lines at end of file 
+			sed -i -e :a -e '/^\n*$/{$d;N;};/\n$/ba' /etc/samba/smb.conf
+			#restart smb service
+			/bin/systemctl restart smbd
+		fi
     fi
 
 
