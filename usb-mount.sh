@@ -74,15 +74,15 @@ do_mount()
         echo "${MOUNT_POINT}:${DEVBASE}" | cat >> "/var/log/usb-mount.track"
         ## 
         #Sharing mounted drive as public read write share if samba installed
-		## 
-		if [[ $(/usr/bin/which samba | grep -ic 'samba') != 0 ]]; then
-			# Create samba file definition
-			printf "[%s]\n  comment = Public share of %s\n  path = %s\n  browsable =yes\n  create mask = 0660\n  directory mask = 0771\n  writable = yes\n  guest ok = yes\n" "$SMB_SHARE_NAME" "$SMB_SHARE_NAME" "$MOUNT_POINT" > /etc/samba/${SMB_SHARE_NAME}.conf
-			#Include samba file definition in smb.conf
-			echo "include = /etc/samba/${SMB_SHARE_NAME}.conf" >> /etc/samba/smb.conf
-			#restart smb service
-			/bin/systemctl restart smbd
-		fi
+	## 
+	if [[ $(/usr/bin/which samba | grep -ic 'samba') != 0 ]]; then
+		# Create samba file definition
+		printf "[%s]\n  comment = Public share of %s\n  path = %s\n  browsable =yes\n  create mask = 0660\n  directory mask = 0771\n  writable = yes\n  guest ok = yes\n" "$SMB_SHARE_NAME" "$SMB_SHARE_NAME" "$MOUNT_POINT" > /etc/samba/${SMB_SHARE_NAME}.conf
+		#Include samba file definition in smb.conf
+		echo "include = /etc/samba/${SMB_SHARE_NAME}.conf" >> /etc/samba/smb.conf
+		#restart smb service
+		/bin/systemctl restart smbd
+	fi
     fi
 
     ${log} "Mounted ${DEVICE} at ${MOUNT_POINT}"
