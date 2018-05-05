@@ -38,8 +38,8 @@ do_mount()
         exit 1
     fi
 
-    # Get info for this drive: $ID_FS_LABEL, $ID_FS_UUID, and $ID_FS_TYPE
-    eval $(blkid -o udev ${DEVICE})
+    # Get info for this drive: $ID_FS_LABEL and $ID_FS_TYPE
+    eval $(blkid -o udev ${DEVICE} | grep -i -e "ID_FS_LABEL" -e "ID_FS_TYPE")
 
     # Figure out a mount point to use
     LABEL=${ID_FS_LABEL}
