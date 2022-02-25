@@ -29,6 +29,8 @@ DEVICE="/dev/${DEVBASE}"
 # See if this drive is already mounted, and if so where
 MOUNT_POINT=$(mount | grep ${DEVICE} | awk '{ print $3 }')
 
+$(log) "Device $DEVICE Mount Point $MOUNT_POINT"
+
 DEV_LABEL=""
 
 do_mount()
@@ -42,8 +44,9 @@ do_mount()
     eval $(blkid -o udev ${DEVICE} | grep -i -e "ID_FS_LABEL" -e "ID_FS_TYPE")
 
     # Figure out a mount point to use
-    LABEL=${ID_FS_LABEL}
-    if grep -q " /media/${LABEL} " /etc/mtab; then
+    #LABEL=${ID_FS_LABEL}
+    LABEL="usb-device"
+    if grep -q " /media/usb-device " /etc/mtab; then
         # Already in use, make a unique one
         LABEL+="-${DEVBASE}"
     fi
@@ -54,18 +57,19 @@ do_mount()
         DEV_LABEL="${DEVBASE}"
     fi
 
-    MOUNT_POINT="/media/${DEV_LABEL}"
+    MOUNT_POINT="/media/usb-device"
 
     ${log} "Mount point: ${MOUNT_POINT}"
 
     mkdir -p ${MOUNT_POINT}
+    MAKA_USER=$(id -u maka)
 
     # Global mount options
-    OPTS="rw,relatime"
+    OPTS="rw,relatime,umask=000,uid=${MAKA_USER}"
 
     # File system type specific mount options
     if [[ ${ID_FS_TYPE} == "vfat" ]]; then
-        OPTS+=",users,gid=100,umask=000,shortname=mixed,utf8=1,flush"
+        OPTS+=",users,shortname=mixed,utf8=1,flush"
     fi
 
     if ! mount -o ${OPTS} ${DEVICE} ${MOUNT_POINT}; then
